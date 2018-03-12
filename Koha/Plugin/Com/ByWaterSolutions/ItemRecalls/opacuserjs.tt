@@ -1,0 +1,43 @@
+$(document).ready(function() {
+  if (window.location.href.indexOf("opac-user.pl") > -1) {
+
+    $("td.modify input[name='reserve_id'][type='hidden']").each(function(index) {
+      let reserve_id = $(this).val();
+      let cancel_button = $(this).siblings("button");
+
+      $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/item_recalls_opac.pl", {
+        reserve_id: reserve_id,
+        action: 'can_item_be_recalled'
+      }, function(data) {
+        if (data.can_recall) {
+          $("<p/><button data-reserve_id=" + reserve_id + " class='recall-item btn btn-mini btn-warning'><i class='icon-repeat icon-white'></i> Recall item</button>").insertAfter(cancel_button);
+        }
+      });
+
+    });
+
+    $(document.body).on('click', '.recall-item', function(e) {
+      e.preventDefault();
+
+      let button = $(this);
+      let reserve_id = button.data('reserve_id');
+
+      $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/item_recalls_opac.pl", {
+        reserve_id: reserve_id,
+        action: 'recall_item'
+      }, function(data) {
+        if (data.success) {
+          alert("Item recalled!");
+          button.hide();
+        } else {
+          alert("Unable to recall item!");
+        }
+
+        if (data.warning) {
+          alert(data.warning);
+        }
+      });
+    });
+  }
+});
+

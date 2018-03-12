@@ -1,0 +1,69 @@
+[% INCLUDE 'doc-head-open.inc' %]
+  <title>Koha: Item Recalls: Configuration</title>
+  [% INCLUDE 'doc-head-close.inc' %]
+
+  <link rel="stylesheet" type="text/css" href="[% interface %]/[% theme %]/css/humanmsg.css" />
+  <script src="[% interface %]/lib/jquery/plugins/humanmsg.js" type="text/javascript"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('#save_continue').on('click', function(e){
+        e.preventDefault();
+        $.post('', $('#configureForm').serialize(), function(){
+          humanMsg.displayMsg('Settings saved!');
+        });
+      });
+    });
+  </script>
+
+</head>
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Item Recalls &rsaquo; Configuration</div>
+
+<div id="doc3">
+    <h3>Koha: Item Recalls: Configuration</h3>
+
+    This plugin has no configuration options at this time.
+    <form id="configureForm" method="get">
+        <!-- Always pass these two parameters so the plugin system knows what to execute! -->
+        <input type="hidden" name="class" value="[% CLASS %]"/>
+        <input type="hidden" name="method" value="[% METHOD %]"/>
+
+        <fieldset>
+            <legend>Recall rules</legend>
+
+            <textarea name="recall_rules" id="recall_rules" rows="20" cols="40"
+placeholder="-
+  branchcode: BC
+  categorycode: CC
+  itemtype: IT
+  due_date_length: 3
+  past_due_fine_amount: 2.0
+  past_due_restrict: 0
+  pickup_date_length: 3
+-
+  due_date_length: 3
+  past_due_fine_amount: 2.0
+  past_due_restrict: 0
+  pickup_date_length: 3">[% recall_rules %]</textarea>
+            <div class="hint">
+                <p>The keys <i>branchcode</i>, <i>categorycode</i>, and <i>itemtype</i> are option. Leave one out means the rule applies to all items for that key.</p>
+                <p><i>due_date_length</i>: Number days a patron has to return an item once it has been recalled.</p>
+                <p><i>past_due_fine_amount</i>: Optional charge for patrons who fail to return a recall by the new due date.</p>
+                <p><i>past_due_restrict</i>: Optional ability to restrict a patron who fails to return a recall by the new due date.</p>
+                <p><i>pickup_date_length</i>: Number of days the recaller has to pick up the now waiting item.</p>
+            </div>
+        </fieldset>
+
+        <p/>
+
+        <input type="hidden" name="save" value="1" />
+
+        <input type="submit" value="Save" />
+        <button id="save_continue">Save & continue</button>
+    </form>
+
+[% INCLUDE 'intranet-bottom.inc' %]

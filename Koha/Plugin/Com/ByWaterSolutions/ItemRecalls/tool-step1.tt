@@ -1,0 +1,30 @@
+[% INCLUDE 'doc-head-open.inc' %]
+  <title>Koha: Course Reserves Creator: Configuration</title>
+  [% INCLUDE 'doc-head-close.inc' %]
+</head>
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Course Reserves Creator &rsaquo; Modify permissions</div>
+
+<div id="doc3">
+    <h3>Koha: Course Reserves Creator: Modify permissions</h3>
+
+    <form id="course-reserves-upload-form" method="post" enctype="multipart/form-data">
+        <!-- Always pass these two parameters so the plugin system knows what to execute! -->
+        <input type="hidden" name="class" value="[% CLASS %]"/>
+        <input type="hidden" name="method" value="[% METHOD %]"/>
+
+        <fieldset>
+            <legend>Upload file</legend>
+
+            <input type="file" name="uploaded_file" />
+        </fieldset>
+
+        <p>
+
+        <input name="submitted" type="submit" value="Upload" />
+    </form>
+
+[% INCLUDE 'intranet-bottom.inc' %]

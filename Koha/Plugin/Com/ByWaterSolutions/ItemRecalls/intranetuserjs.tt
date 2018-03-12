@@ -1,0 +1,42 @@
+$(document).ready(function() {
+  if (window.location.href.indexOf("request.pl") > -1) {
+    let reserve_elt = $('table tr:nth-child(2) td:nth-child(1) input[name="reserve_id"]')
+    let reserve_id = reserve_elt.val();
+
+    let cancel_button = reserve_elt.parent().parent().find("a.cancel-hold");
+    cancel_button.parent().css("white-space", "nowrap");
+
+    $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/api.pl", {
+      reserve_id: reserve_id,
+      action: 'can_item_be_recalled'
+    }, function(data) {
+      if (data.can_recall) {
+        $("<a href='#' title='Recall item' data-reserve_id=" + reserve_id + " class='recall-item btn btn-default btn-xs btn-link'><i class='fa fa-repeat'></i></a>").insertAfter(cancel_button);
+      }
+    });
+
+    $(document.body).on('click', '.recall-item', function(e) {
+      e.preventDefault();
+
+      let button = $(this);
+      let reserve_id = button.data('reserve_id');
+
+      $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/api.pl", {
+        reserve_id: reserve_id,
+        action: 'recall_item'
+      }, function(data) {
+        if (data.success) {
+          alert("Item recalled!");
+          button.hide();
+        } else {
+          alert("Unable to recall item!");
+        }
+
+        if (data.warning) {
+          alert(data.warning);
+        }
+      });
+    });
+  }
+});
+
