@@ -281,7 +281,7 @@ sub cronjob {
                 borrowernumber => $hold->borrowernumber,
                 letter_code    => 'HOLD',
                 status         => 'pending',
-                content        => { like => "%ID: $r->{reserve_id}.%" },
+                content        => { like => "%ID: $r->{reserve_id}.%\r\n" },
             }
         );
 
