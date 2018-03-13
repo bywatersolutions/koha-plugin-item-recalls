@@ -1,3 +1,4 @@
+
 $(document).ready(function() {
   if (window.location.href.indexOf("opac-user.pl") > -1) {
 
