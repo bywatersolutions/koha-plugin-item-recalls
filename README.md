@@ -28,17 +28,26 @@ Once set up is complete you will need to alter your UseKohaPlugins system prefer
 # Setup
 
 * Install the plugin
+* Ensure each HOLD notice ends with the following code:
+
+```
+--
+ID: <<reserves.reserve_id>>.
+--
+```
 
 * Add the following to each staff and opac section of your Apache config:
 
-    Alias /plugin "/var/lib/koha/kohadev/plugins"
-    # The stanza below is needed for Apache 2.4+
-    <Directory /var/lib/koha/kohadev/plugins>
-          Options Indexes FollowSymLinks ExecCGI
-          AddHandler cgi-script .pl
-          AllowOverride None
-          Require all granted
-    </Directory>
+```apache
+Alias /plugin "/var/lib/koha/kohadev/plugins"
+# The stanza below is needed for Apache 2.4+
+<Directory /var/lib/koha/kohadev/plugins>
+      Options Indexes FollowSymLinks ExecCGI
+      AddHandler cgi-script .pl
+      AllowOverride None
+      Require all granted
+</Directory>
+```
 
 * Set up the nightly cronjob
 * Tie the regular cronjob to the cronjob for process_message_queue.pl so it always run before it
