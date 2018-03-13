@@ -6,7 +6,7 @@ $(document).ready(function() {
       let reserve_id = $(this).val();
       let cancel_button = $(this).siblings("button");
 
-      $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/item_recalls_opac.pl", {
+      $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/api.pl", {
         reserve_id: reserve_id,
         action: 'can_item_be_recalled'
       }, function(data) {
@@ -23,7 +23,7 @@ $(document).ready(function() {
       let button = $(this);
       let reserve_id = button.data('reserve_id');
 
-      $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/item_recalls_opac.pl", {
+      $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/api.pl", {
         reserve_id: reserve_id,
         action: 'recall_item'
       }, function(data) {
