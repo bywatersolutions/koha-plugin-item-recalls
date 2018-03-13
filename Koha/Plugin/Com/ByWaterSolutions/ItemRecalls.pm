@@ -350,7 +350,7 @@ sub install() {
     });
 
     $dbh->do(q{
-        UPDATE letter SET content = CONCAT( content, "\r\n--\r\nID: <<reserves.reserve_id>>\r\n--" ) WHERE code = "HOLD" AND content NOT LIKE "%ID: <<reserves.reserve_id>>%"
+        UPDATE letter SET content = CONCAT( content, "\r\n--\r\nID: <<reserves.reserve_id>>.\r\n--" ) WHERE code = "HOLD" AND content NOT LIKE "%ID: <<reserves.reserve_id>>%"
     });
 
     return 1;
