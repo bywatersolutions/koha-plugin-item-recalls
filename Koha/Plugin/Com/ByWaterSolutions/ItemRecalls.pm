@@ -349,6 +349,10 @@ sub install() {
             ('reserves', 'RECALL_PICKUP_PLUGIN', '', 'Recalled item ready for pickup', 0, 'Recalled item ready for pickup', 'Dear <<borrowers.firstname>> <<borrowers.surname>>,\r\n\r\nYou have a recall available for pickup as of <<reserves.waitingdate>>:\r\n\r\nTitle: <<biblio.title>>\r\nAuthor: <<biblio.author>>\r\nCopy: <<items.copynumber>>\r\nLocation: <<branches.branchname>>\r\n<<branches.branchaddress1>>\r\n<<branches.branchaddress2>>\r\n<<branches.branchaddress3>>\r\n<<branches.branchcity>> <<branches.branchzip>>\r\n', 'email', 'default');
     });
 
+    $dbh->do(q{
+        UPDATE letter SET content = CONCAT( content, "\r\n--\r\nID: <<reserves.reserve_id>>\r\n--" ) WHERE code = "HOLD" AND content NOT LIKE "%ID: <<reserves.reserve_id>>%"
+    });
+
     return 1;
 }
 
