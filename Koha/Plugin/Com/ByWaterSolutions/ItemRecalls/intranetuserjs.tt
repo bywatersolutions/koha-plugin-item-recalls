@@ -1,4 +1,4 @@
-
+[%- UNLESS enable_auto_recall -%]
 $(document).ready(function() {
   if (window.location.href.indexOf("request.pl") > -1) {
     let reserve_elt = $('table tr:nth-child(2) td:nth-child(1) input[name="reserve_id"]')
@@ -40,4 +40,4 @@ $(document).ready(function() {
     });
   }
 });
-
+[%- END -%]

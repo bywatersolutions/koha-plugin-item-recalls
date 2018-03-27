@@ -58,6 +58,14 @@ placeholder="-
             </div>
         </fieldset>
 
+        <fieldset>
+            <legend>Other options</legend>
+
+            <input type="checkbox" name="enable_auto_recall" id="enable_auto_recall" [% IF enable_auto_recall %]checked="checked"[% END %]/>
+            <label for="enable_auto_recall">Auto-recall</label>
+            <span class="hint">Automatically recall any item placed on hold. No manual recall button will display.</span>
+        </fieldset>
+
         <p/>
 
         <input type="hidden" name="save" value="1" />

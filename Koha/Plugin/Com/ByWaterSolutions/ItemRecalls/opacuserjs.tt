@@ -1,4 +1,4 @@
-
+[%- UNLESS enable_auto_recall -%]
 $(document).ready(function() {
   if (window.location.href.indexOf("opac-user.pl") > -1) {
 
@@ -41,4 +41,4 @@ $(document).ready(function() {
     });
   }
 });
-
+[%- END -%]
