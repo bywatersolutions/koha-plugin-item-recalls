@@ -12,6 +12,7 @@ use YAML;
 
 use C4::Letters;
 use C4::Accounts qw( manualinvoice );
+use C4::Reserves qw( AddReserve );
 use Koha::Holds;
 use Koha::Notice::Messages;
 use Koha::Patron::Debarments;
@@ -110,27 +111,104 @@ sub api {
     my ( $self, $args ) = @_;
     my $cgi = $self->{cgi};
 
-    my $reserve_id = $cgi->param('reserve_id');
-    my $action     = $cgi->param('action');
+    my $action = $cgi->param('action');
 
     my $rules = $self->retrieve_data('recall_rules') . "\n";
     $rules = YAML::Load($rules);
 
-    my $hold = Koha::Holds->find($reserve_id);
-
-    my $can_recall_rule = $self->can_recall( $hold, $rules );
-
     my $data;
-    if ( $action eq 'can_item_be_recalled' ) {
-        $data->{can_recall} = $can_recall_rule;
+    if ( $action eq 'can_item_be_recalled' || $action eq 'recall_item' ) {
+        my $reserve_id = $cgi->param('reserve_id');
+
+        my $hold = Koha::Holds->find($reserve_id);
+
+        my $can_recall_rule = $self->can_recall( $hold, $rules );
+
+        if ( $action eq 'can_item_be_recalled' ) {
+            $data->{can_recall} = $can_recall_rule;
+        }
+        elsif ( $action eq 'recall_item' ) {
+            if ($can_recall_rule) {
+                $data = $self->recall_item({ hold => $hold, rule => $can_recall_rule});
+            }
+            else {
+                $data->{success} = 0;
+            }
+        }
     }
-    elsif ( $action eq 'recall_item' ) {
-        if ($can_recall_rule) {
-            $data = $self->recall_item($hold, $can_recall_rule);
+    elsif ( $action eq 'recall_course_items' ) {
+        my $course_id  = $cgi->param('course_id');
+        my $date_due   = $cgi->param('date_due');
+        my $username   = $cgi->param('username');
+        my $branchcode = $cgi->param('branchcode');
+
+        return unless $course_id;
+
+        $data->{success} = 0;
+
+        my $dbh = C4::Context->dbh;
+        my $sth = $dbh->prepare("SELECT * FROM plugin_recalls WHERE issue_id = ?");
+
+        my @course_reserves =
+          Koha::Database->new()->schema->resultset('CourseReserve')
+          ->search( { course_id => $course_id } );
+        foreach my $cr ( @course_reserves ) {
+            my $course_item = $cr->ci;
+            my $item = Koha::Items->find( $course_item->itemnumber->id );
+            my $checkout = $item->checkout;
+            my $patron = $checkout->patron;
+
+            next unless $checkout;
+
+            $sth->execute( $checkout->id );
+            my $recall = $sth->fetchrow_hashref;
+
+            next if $recall;
+
+            my $recaller = Koha::Patrons->find({ userid => $username });
+            die("Can't find patron with userid $username") unless $recaller;
+
+            my $hold_id  = AddReserve(
+                $branchcode,
+                $recaller->id,
+                $item->biblionumber,
+                undef,
+                1,
+                undef,
+                undef,
+                'Item recalled for course reserve',
+                undef,
+                $item->id,
+            );
+            my $hold = Koha::Holds->find( $hold_id );
+
+            my $rule;
+            foreach my $r (@$rules) { # Logic is duplicated in can_recall()
+                my $it_match = !$r->{itemtype} || $r->{itemtype} eq $item->effective_itemtype;
+                my $cc_match =
+                  !$r->{categorycode} || $r->{categorycode} eq $item->ccode;
+                my $bc_match =
+                  !$r->{branchcode} || $r->{branchcode} eq $patron->branchcode;
+
+                if ( $it_match && $cc_match && $bc_match ) {
+                    $rule = $r;
+                    last;
+                }
+            }
+
+            $data->{ $item->id } = $self->recall_item(
+                {
+                    rule     => $rule,
+                    date_due => $date_due,
+                    item     => $item,
+                    patron   => $patron,
+                    checkout => $checkout,
+                    hold     => $hold,
+                }
+            );
         }
-        else {
-            $data->{success} = 0;
-        }
+
+        $data->{success} = 1 if ( keys %$data );
     }
 
     print $cgi->header(
@@ -161,12 +239,13 @@ sub can_recall {
         && $hold->priority eq '1' )
     {    # Recalls only work for item level holds
         my $item = $hold->item;
-        foreach my $r (@$rules) {
+        my $patron = $item->checkout->patron;
+        foreach my $r (@$rules) { # Logic is duplicated in api()
             my $it_match = !$r->{itemtype} || $r->{itemtype} eq $item->itype;
             my $cc_match =
               !$r->{categorycode} || $r->{categorycode} eq $item->ccode;
             my $bc_match =
-              !$r->{branchcode} || $r->{branchcode} eq $hold->branchcode;
+              !$r->{branchcode} || $r->{branchcode} eq $patron->branchcode;
 
             if ( $it_match && $cc_match && $bc_match ) {
                 $rule = $r;
@@ -179,19 +258,32 @@ sub can_recall {
 }
 
 sub recall_item {
-    my ($self, $hold, $rule) = @_;
+    my ($self, $params) = @_;
 
-    my $item     = $hold->item;
-    my $checkout = $item->checkout;
-    my $patron   = $checkout->patron;
+    my $rule         = $params->{rule};
+    my $new_date_due = $params->{date_due};
+    my $hold         = $params->{hold};
+    my $item         = $params->{item};
+    my $patron       = $params->{patron};
+    my $checkout     = $params->{checkout};
+
+    $item     ||= $hold->item       if $hold;
+    $checkout ||= $item->checkout   if $item;
+    $patron   ||= $checkout->patron if $checkout;
 
     my $dbh = C4::Context->dbh;
 
     my $data;
 
     my $date_due = dt_from_string( $checkout->date_due );
-    my $new_date_due =
-      dt_from_string()->add( days => $rule->{due_date_length} );
+
+    if ($new_date_due) { # Date passed in in ISO
+        $new_date_due = dt_from_string($new_date_due);
+    }
+    else { # No date passed in, calculate from rules
+        $new_date_due =
+          dt_from_string()->add( days => $rule->{due_date_length} );
+    }
 
     # Don't update date due if it is already due soon then date_due_length
     if ( $date_due > $new_date_due ) {
@@ -199,16 +291,14 @@ sub recall_item {
         $checkout->store() or $data->{warning} = 'Unable to reduce due date';
     }
 
-    $dbh->do(
-        qq{
-                INSERT INTO plugin_recalls ( issue_id, reserve_id, rule ) VALUES ( ?, ?, ? );
-            }, undef, ( $checkout->id, $hold->id, YAML::Dump($rule) )
-    );
+    $dbh->do(qq{
+        INSERT INTO plugin_recalls ( issue_id, reserve_id, rule ) VALUES ( ?, ?, ? );
+    }, undef, ( $checkout->id, $hold->id, YAML::Dump($rule) ));
 
     my $letter = C4::Letters::GetPreparedLetter(
         module      => 'reserves',
         letter_code => 'RECALL_PLUGIN',
-        branchcode  => $hold->branchcode,
+        branchcode  => $patron->branchcode,
         lang        => $patron->lang,
         tables      => {
             branches  => $checkout->branchcode,
@@ -240,6 +330,12 @@ sub cronjob_nightly {
     my ( $self, $args ) = @_;
 
     my $dbh = C4::Context->dbh;
+
+    $dbh->do(q{
+        DELETE FROM plugin_recalls
+        WHERE issue_id   IS NULL
+          AND reserve_id IS NULL
+    });
 
     my $recalls = $dbh->selectall_arrayref(
         'SELECT * FROM plugin_recalls WHERE issue_id IS NOT NULL',
@@ -332,7 +428,7 @@ sub cronjob {
         foreach my $u (@$unrecalled) {
             my $hold = Koha::Holds->find( $u->{reserve_id} );
             my $rule = $self->can_recall( $hold, $rules );
-            $self->recall_item($hold, $rule) if $rule;
+            $self->recall_item({ hold => $hold, rule => $rule }) if $rule;
         }
     }
 
@@ -411,7 +507,7 @@ sub install() {
         qq{
         CREATE TABLE IF NOT EXISTS `plugin_recalls` (
           `issue_id` INT(11) NULL,
-          `reserve_id` INT(11) NOT NULL,
+          `reserve_id` INT(11) NULL,
           `rule` TINYTEXT NOT NULL,
           KEY `issue_id` (`issue_id`),
           KEY `reserve_id` (`reserve_id`),
