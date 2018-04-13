@@ -1,7 +1,7 @@
 {
   "name": "koha-plugin-item-recalls",
-  "version": "1.0.8",
-  "previous_version": "1.0.7",
+  "version": "1.0.9",
+  "previous_version": "1.0.8",
   "description": "Koha Course Reserves Creator",
   "main": "index.js",
   "dependencies": {
