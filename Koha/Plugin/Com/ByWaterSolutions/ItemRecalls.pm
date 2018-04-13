@@ -156,9 +156,8 @@ sub api {
             my $course_item = $cr->ci;
             my $item = Koha::Items->find( $course_item->itemnumber->id );
             my $checkout = $item->checkout;
-            my $patron = $checkout->patron;
-
             next unless $checkout;
+            my $patron = $checkout->patron;
 
             $sth->execute( $checkout->id );
             my $recall = $sth->fetchrow_hashref;
