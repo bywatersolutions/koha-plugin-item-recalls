@@ -283,6 +283,9 @@ sub recall_item {
         $new_date_due =
           dt_from_string()->add( days => $rule->{due_date_length} );
     }
+    $new_date_due->set_hour('23');
+    $new_date_due->set_minute('59');
+    $new_date_due->set_seconds('00');
 
     # Don't update date due if it is already due soon then date_due_length
     if ( $date_due > $new_date_due ) {
