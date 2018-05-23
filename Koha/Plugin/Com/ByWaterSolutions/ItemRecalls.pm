@@ -155,8 +155,7 @@ sub api {
         foreach my $cr ( @course_reserves ) {
             my $course_item = $cr->ci;
             my $item = Koha::Items->find( $course_item->itemnumber->id );
-            my $checkout = $item->checkout;
-            next unless $checkout;
+            my $checkout = $item->checkout || next;
             my $patron = $checkout->patron;
 
             $sth->execute( $checkout->id );
