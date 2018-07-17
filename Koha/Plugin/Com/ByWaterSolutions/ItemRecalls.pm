@@ -441,6 +441,7 @@ sub cronjob {
         my $hold = Koha::Holds->find( $r->{reserve_id} );
 
         next if $hold->notificationdate;
+        next if $hold->is_in_transit;
 
         my $rule = YAML::Load( $r->{rule} );
 
