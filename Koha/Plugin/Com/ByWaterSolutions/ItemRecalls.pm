@@ -412,7 +412,7 @@ sub cronjob_nightly {
 
     foreach my $r (@$restrictions) {
         my $borrowernumber = $r->{borrowernumber};
-        my $itemnumber = ( split( ', Itemnumber:', $r->{description} ) )[-1];
+        my $itemnumber = ( split( ', Itemnumber:', $r->{comment} ) )[-1];
 
         my $checked_out = Koha::Checkouts->search(
             {
