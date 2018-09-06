@@ -6,17 +6,18 @@ use Modern::Perl;
 ## Required for all plugins
 use base qw(Koha::Plugins::Base);
 
-use Text::CSV;
 use JSON;
+use Text::CSV;
 use YAML;
 
-use C4::Letters;
 use C4::Accounts qw( manualinvoice );
+use C4::Letters;
 use C4::Reserves qw( AddReserve );
+use Koha::Checkouts;
+use Koha::DateUtils qw( dt_from_string );
 use Koha::Holds;
 use Koha::Notice::Messages;
 use Koha::Patron::Debarments;
-use Koha::DateUtils qw( dt_from_string );
 
 # This block allows us to load external modules stored within the plugin itself
 # In this case it's Template::Plugin::Filter::Minify::JavaScript/CSS and deps
@@ -348,15 +349,16 @@ sub cronjob_nightly {
             my $rule = YAML::Load( $r->{rule} );
 
             if ( $rule->{past_due_restrict} ) {
-                my $title   = $checkout->item->biblio->title;
-                my $barcode = $checkout->item->barcode;
+                my $title      = $checkout->item->biblio->title;
+                my $barcode    = $checkout->item->barcode;
+                my $itemnumber = $checkout->itemnumber;
                 my $date_due_formatted =
                   Koha::DateUtils::format_sqldatetime( $checkout->date_due );
 
                 my $comment =
                     "Patron restricted for failing to "
                   . "return recalled item in time: "
-                  . "$title ( $barcode ) Due $date_due_formatted";
+                  . "$title ( $barcode ) Due $date_due_formatted, Itemnumber:$itemnumber";
 
                 my $restrictions = Koha::Patron::Debarments::GetDebarments(
                     {
@@ -401,6 +403,29 @@ sub cronjob_nightly {
             }
         }
     }
+
+    # Delete auto-restrictions for items that have now been returned
+    my $restrictions = $dbh->selectall_arrayref(
+        q{SELECT * FROM borrower_debarments WHERE type = 'MANUAL' AND comment LIKE 'Patron restricted for failing to return recalled item in time: %'},
+        { Slice => {} }
+    );
+
+    foreach my $r (@$restrictions) {
+        my $borrowernumber = $r->{borrowernumber};
+        my $itemnumber = ( split( ', Itemnumber:', $r->{description} ) )[-1];
+
+        my $checked_out = Koha::Checkouts->search(
+            {
+                borrowernumber => $borrowernumber,
+                itemnumber     => $itemnumber
+            }
+        )->count();
+
+        if ( !$checked_out ) {
+            DelDebarment( $r->{borrower_debarment_id} );
+        }
+    }
+
 }
 
 sub cronjob {
