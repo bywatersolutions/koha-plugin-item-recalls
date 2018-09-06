@@ -406,7 +406,7 @@ sub cronjob_nightly {
 
     # Delete auto-restrictions for items that have now been returned
     my $restrictions = $dbh->selectall_arrayref(
-        q{SELECT * FROM borrower_debarments WHERE type = 'MANUAL' AND comment LIKE 'Patron restricted for failing to return recalled item in time: %'},
+        q{SELECT * FROM borrower_debarments WHERE type = 'MANUAL' AND comment LIKE 'Patron restricted for failing to return recalled item in time: %, Itemnumber:%'},
         { Slice => {} }
     );
 
