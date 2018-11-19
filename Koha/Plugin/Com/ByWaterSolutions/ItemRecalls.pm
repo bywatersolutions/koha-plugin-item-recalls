@@ -568,18 +568,19 @@ sub update_syspref {
     my $name = $self->get_metadata->{name};
 
     my $syspref = C4::Context->preference($syspref_name);
-    $syspref =~
-s|\n*/\* JS and CSS for $name Plugin.*End of JS and CSS for $name Plugin \*/||gs;
+    $syspref =~ s|\n*/\* JS and CSS for $name Plugin.*End of JS and CSS for $name Plugin \*/||gs;
 
-    my $template = $self->get_template( { file => "$syspref_name.tt" } );
-    $template->param(%$data);
+    if ( ! $self->retrieve_data('disable_opac_recall') ) {
+        my $template = $self->get_template( { file => "$syspref_name.tt" } );
+        $template->param(%$data);
 
-    my $template_output = $template->output();
+        my $template_output = $template->output();
 
-    $template_output = qq|\n/* JS and CSS for $name Plugin 
-   This JS was added automatically by installing the $name Plugin
-   Please do not modify */|
-      . $template_output . qq|/* End of JS and CSS for $name Plugin */|;
+        $template_output = qq|\n/* JS and CSS for $name Plugin
+       This JS was added automatically by installing the $name Plugin
+       Please do not modify */|
+          . $template_output . qq|/* End of JS and CSS for $name Plugin */|;
+    }
 
     $syspref .= $template_output;
     C4::Context->set_preference( $syspref_name, $syspref );

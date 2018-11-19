@@ -64,6 +64,10 @@ placeholder="-
             <input type="checkbox" name="enable_auto_recall" id="enable_auto_recall" [% IF enable_auto_recall %]checked="checked"[% END %]/>
             <label for="enable_auto_recall">Auto-recall</label>
             <span class="hint">Automatically recall any item placed on hold. No manual recall button will display.</span>
+            <p>
+            <input type="checkbox" name="disable_opac_recall" id="disable_opac_recall" [% IF disable_opac_recall %]checked="checked"[% END %]/>
+            <label for="disable_opac_recall">Disable manual recalls via OPAC.</label>
+            <span class="hint">Does nothing if you are using auto-recall, otherwise prevents patrons from placing recalls via the OPAC.</span>
         </fieldset>
 
         <p/>
