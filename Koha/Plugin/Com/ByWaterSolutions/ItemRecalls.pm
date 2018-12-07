@@ -580,9 +580,10 @@ sub update_syspref {
        This JS was added automatically by installing the $name Plugin
        Please do not modify */|
           . $template_output . qq|/* End of JS and CSS for $name Plugin */|;
+
+        $syspref .= $template_output;
     }
 
-    $syspref .= $template_output;
     C4::Context->set_preference( $syspref_name, $syspref );
 }
 
