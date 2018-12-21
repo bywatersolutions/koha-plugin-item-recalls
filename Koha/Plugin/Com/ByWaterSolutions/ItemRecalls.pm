@@ -72,8 +72,10 @@ sub configure {
     unless ( $cgi->param('save') ) {
         my $template = $self->get_template( { file => 'configure.tt' } );
 
-        my $query =
-q{SELECT * FROM plugin_data WHERE plugin_class = 'Koha::Plugin::Com::ByWaterSolutions::ItemRecalls'};
+        my $query = q{
+            SELECT * FROM plugin_data
+            WHERE plugin_class = 'Koha::Plugin::Com::ByWaterSolutions::ItemRecalls'
+        };
         my $sth = $dbh->prepare($query);
         $sth->execute();
         my $data;
@@ -96,13 +98,17 @@ q{SELECT * FROM plugin_data WHERE plugin_class = 'Koha::Plugin::Com::ByWaterSolu
         my $data = { $cgi->Vars };
         delete $data->{$_} for qw( method save class );
 
-        $self->update_syspref( 'opacuserjs',     $data );
-        $self->update_syspref( 'intranetuserjs', $data );
-
         $dbh->do(
-q{DELETE FROM plugin_data WHERE plugin_key LIKE "enable%" AND plugin_class = 'Koha::Plugin::Com::ByWaterSolutions::ItemRecalls'}
+            q{
+                DELETE FROM plugin_data
+                WHERE ( plugin_key LIKE "enable%" OR plugin_key LIKE "disable%" )
+                  AND plugin_class = 'Koha::Plugin::Com::ByWaterSolutions::ItemRecalls'
+            }
         );
         $self->store_data($data);
+
+        $self->update_syspref( 'opacuserjs',     $data );
+        $self->update_syspref( 'intranetuserjs', $data );
 
         $self->go_home();
     }
@@ -570,7 +576,7 @@ sub update_syspref {
     my $syspref = C4::Context->preference($syspref_name);
     $syspref =~ s|\n*/\* JS and CSS for $name Plugin.*End of JS and CSS for $name Plugin \*/||gs;
 
-    if ( ! $self->retrieve_data('disable_opac_recall') ) {
+    if ( $syspref_name eq 'intranetuserjs' ||  !$self->retrieve_data('disable_opac_recall') ) {
         my $template = $self->get_template( { file => "$syspref_name.tt" } );
         $template->param(%$data);
 
