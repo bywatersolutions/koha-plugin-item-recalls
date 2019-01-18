@@ -132,3 +132,5 @@ Cron job needs to be set to run for this before the holds notices are run, as th
 
 ID378 -  this little line of info at the bottom of the notice is very important (the number will change).  This is the Hold ID, or Reserve ID.
 
+# Link to YouTube video
+https://youtu.be/Vb6eoKKnPnc
