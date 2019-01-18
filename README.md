@@ -53,7 +53,7 @@ Alias /plugin "/var/lib/koha/kohadev/plugins"
 * Tie the regular cronjob to the cronjob for process_message_queue.pl so it always run before it
 
 
-#Staff Client Process
+# Staff Client Setup
 
 When you install the plug in, it does three things:
 Creates a table called Plug_In_recalls - has added Reserve ID and the item number
@@ -61,7 +61,7 @@ Creates two new notices: RECALL_Plugin and RECALL_pickup
 Goes through the Holds notices and adds the Reserve ID.
 
 
-For Recalls to happen: 
+# For Recalls to Happen: 
 Item must be checked out
 Item must be on hold
 For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
@@ -92,7 +92,7 @@ Since these rules allow for specific branch codes, patron types and Items to be 
 This recall can be done on both the staff side and the OPAC
 
 
-Steps to recreate this on the staff side.  
+# Steps to recreate this from Staff Side.  
 1. Find an item that is currently checked out.
 2. Go to place a hold on this item.  This must be an item level hold- so pick the specific copy that is checked out.
 3.Once the hold is created, this screen (see above) will appear.
@@ -106,7 +106,7 @@ Steps to recreate this on the staff side.
 
 
 
-Steps for Recalling Holds from the OPAC
+# Steps for recalling holds on the OPAC
 
 1.Patron would log into their account on the OPAC.
 2.Find a book that is currently checked out.
@@ -118,7 +118,7 @@ Steps for Recalling Holds from the OPAC
 
 
 
-Things to Note: 
+# Things to Note
 
 
 Cron job needs to be set to run for this before the holds notices are run, as this cron job will change a hold pickup notice to Item Recall Pickup notice
