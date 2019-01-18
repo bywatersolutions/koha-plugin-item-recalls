@@ -62,10 +62,10 @@ Goes through the Holds notices and adds the Reserve ID.
 
 
 # For Recalls to Happen: 
-Item must be checked out
-Item must be on hold
-For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
-Must have a rule allowing item recall
+-Item must be checked out
+-Item must be on hold
+-For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
+-Must have a rule allowing item recall
 
 To configure rules for the ability to recall the holds- Manage Plugins, Configure “Recall Holds Plugin”
 
