@@ -62,10 +62,14 @@ Goes through the Holds notices and adds the Reserve ID.
 
 
 # For Recalls to Happen: 
--Item must be checked out
--Item must be on hold
--For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
--Must have a rule allowing item recall
+
+*Item must be checked out
+
+*Item must be on hold
+
+*For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
+
+*Must have a rule allowing item recall
 
 To configure rules for the ability to recall the holds- Manage Plugins, Configure “Recall Holds Plugin”
 
@@ -78,11 +82,14 @@ CC= category code - patron type from authorized values
 
 Rules are checked top to bottom - matches on the first matching rule it finds, so have the rules most specific to least specific.
 
-Due_date_length = how many days from today the current patron  has to return the item.  Example: 3 means you have 3 days to return the item.
-Past_due_fine_amount = Optional charge for patrons who fail to return a recall by the new due date.  This is an addition to any other fines that accrue.
-Past_due_restrict = Optional ability to restrict a patron who fails to return a recall by the new due date.
+* Due_date_length = how many days from today the current patron  has to return the item.  Example: 3 means you have 3 days to return the item.
+
+* Past_due_fine_amount = Optional charge for patrons who fail to return a recall by the new due date.  This is an addition to any other fines that accrue.
+
+* Past_due_restrict = Optional ability to restrict a patron who fails to return a recall by the new due date.
 Example 0=no restriction 1 = restrict
-Pickup_date_length = Number of days the recaller has to pick up the now awaiting item. 
+
+* Pickup_date_length = Number of days the recaller has to pick up the now awaiting item. 
 
 If you take out the branch code, category code and item code, the rules will apply to all locations, all patron types, and all item types.
 
