@@ -51,3 +51,19 @@ Alias /plugin "/var/lib/koha/kohadev/plugins"
 
 * Set up the nightly cronjob
 * Tie the regular cronjob to the cronjob for process_message_queue.pl so it always run before it
+
+
+#Staff Client Process
+
+When you install the plug in, it does three things:
+Creates a table called Plug_In_recalls - has added Reserve ID and the item number
+Creates two new notices: RECALL_Plugin and RECALL_pickup
+Goes through the Holds notices and adds the Reserve ID.
+
+
+For Recalls to happen: 
+Item must be checked out
+Item must be on hold
+For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
+Must have a rule allowing item recall
+
