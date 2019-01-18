@@ -67,3 +67,61 @@ Item must be on hold
 For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
 Must have a rule allowing item recall
 
+To configure rules for the ability to recall the holds- Manage Plugins, Configure “Recall Holds Plugin”
+
+
+These rules are written in YAML which when you create a rule, verify at YAMLit.com that code is correct
+
+BC= branch code - currently is the pick up location
+CC= category code - patron type from authorized values
+
+
+Rules are checked top to bottom - matches on the first matching rule it finds, so have the rules most specific to least specific.
+
+Due_date_length = how many days from today the current patron  has to return the item.  Example: 3 means you have 3 days to return the item.
+Past_due_fine_amount = Optional charge for patrons who fail to return a recall by the new due date.  This is an addition to any other fines that accrue.
+Past_due_restrict = Optional ability to restrict a patron who fails to return a recall by the new due date.
+Example 0=no restriction 1 = restrict
+Pickup_date_length = Number of days the recaller has to pick up the now awaiting item. 
+
+If you take out the branch code, category code and item code, the rules will apply to all locations, all patron types, and all item types.
+
+Since these rules allow for specific branch codes, patron types and Items to be recalled- each combination of these would have their own set up rules configured in the plugin.
+
+
+This recall can be done on both the staff side and the OPAC
+
+
+Steps to recreate this on the staff side.  
+1. Find an item that is currently checked out.
+2. Go to place a hold on this item.  This must be an item level hold- so pick the specific copy that is checked out.
+3.Once the hold is created, this screen (see above) will appear.
+4.Within a sec, the recall item symbol resembles the refresh icon in browsers will appear.  
+5.Click this recall symbol - the staff will see a pop up message that says that the item has been recalled.
+6.A notice will go to the patron that currently has the booked checked out.  
+7.  The language can be adjusted for this recall notice in the Notices and Slips .
+8.  The due date changes on the patrons account that has the book.
+9.  Once the item has been returned to the library- the patron that was first on the list and that chose for the recall will be notified that their hold is available.  
+10.  The cron will change the notice from the standard “Hold Available for Pickup” to the Recall Hold notice - due to the fact that they will have a limited number of days to pick up the item they recalled.
+
+
+
+Steps for Recalling Holds from the OPAC
+
+1.Patron would log into their account on the OPAC.
+2.Find a book that is currently checked out.
+3.Place a hold on this book.  This does need to be a specific item hold, the patron would need to choose “show more options” which would allow them to choose a specific item
+4.Koha will display the patrons holds on the patron summary screen and there will be an orange button that displays to “recall the hold”
+5.  Clicking to recall the item does create a popup saying that the item has been recalled.
+6. The due date for the patron that has it currently checked out will be adjusted per the rules set up in the plugin configuration.
+7. Steps are the same for Staff and OPAC from here.
+
+
+
+Things to Note: 
+
+
+Cron job needs to be set to run for this before the holds notices are run, as this cron job will change a hold pickup notice to Item Recall Pickup notice
+
+ID378 -  this little line of info at the bottom of the notice is very important (the number will change).  This is the Hold ID, or Reserve ID.
+
