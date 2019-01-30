@@ -392,7 +392,8 @@ sub cronjob_nightly {
                     "Failure to return recalled item in time: "
                   . "( $barcode ) Due $date_due_formatted";
 
-                my $recalls = $dbh->selectall_arrayref(
+                my $recalls = [];
+                $recalls = $dbh->selectall_arrayref(
                     'SELECT * FROM accountlines WHERE borrowernumber = ?'
                       . 'AND itemnumber = ? AND description = ? AND accounttype = ?',
                     { Slice => {} },
@@ -400,7 +401,8 @@ sub cronjob_nightly {
                     $checkout->item->id,
                     $description,
                     'F'
-                );
+                ) unless $rule->{past_due_fine_amount_is_daily};
+
                 unless (@$recalls) {
                     C4::Accounts::manualinvoice( $checkout->patron->id,
                         $checkout->item->id, $description, 'F',
