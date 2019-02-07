@@ -13,6 +13,7 @@ use YAML;
 use C4::Accounts qw( manualinvoice );
 use C4::Letters;
 use C4::Reserves qw( AddReserve );
+use Koha::Calendar;
 use Koha::Checkouts;
 use Koha::DateUtils qw( dt_from_string );
 use Koha::Holds;
@@ -292,6 +293,15 @@ sub recall_item {
     $new_date_due->set_hour('23');
     $new_date_due->set_minute('59');
     $new_date_due->set_second('00');
+
+    if ( C4::Context->preference('useDaysMode') ne 'Days' ) {
+        my $calendar = Koha::Calendar->new( branchcode => $checkout->branchcode );
+        if ( $calendar->is_holiday($new_date_due) ) {
+
+            # Don't return on a closed day
+            $new_date_due = $calendar->next_open_day($new_date_due);
+        }
+    }
 
     # Don't update date due if it is already due soon then date_due_length
     if ( $date_due > $new_date_due ) {
