@@ -8,11 +8,12 @@ use base qw(Koha::Plugins::Base);
 
 use JSON;
 use Text::CSV;
+use Try::Tiny;
 use YAML;
 
-use C4::Accounts qw( manualinvoice );
 use C4::Letters;
 use C4::Reserves qw( AddReserve );
+use Koha::Account;
 use Koha::Calendar;
 use Koha::Checkouts;
 use Koha::DateUtils qw( dt_from_string );
@@ -414,9 +415,23 @@ sub cronjob_nightly {
                 ) unless $rule->{past_due_fine_amount_is_daily};
 
                 unless (@$recalls) {
-                    C4::Accounts::manualinvoice( $checkout->patron->id,
-                        $checkout->item->id, $description, 'F',
-                        $rule->{past_due_fine_amount} );
+                    try {
+                        #FIXME: Remove this use of manualinvoice once Koha 18.11 is past oldstable
+                        require C4::Accounts;
+                        C4::Accounts::manualinvoice( $checkout->patron->id,
+                            $checkout->item->id, $description, 'F',
+                            $rule->{past_due_fine_amount} );
+                    }
+                    catch {
+                        $checkout->patron->account->add_debit(
+                            {
+                                amount      => $rule->{past_due_fine_amount},
+                                description => $description,
+                                item_id     => $checkout->item->id,
+                                type        => 'fine',
+                            }
+                        );
+                    };
                 }
             }
         }
