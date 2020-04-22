@@ -463,6 +463,11 @@ sub cronjob_nightly {
 
 sub cronjob {
     my ( $self, $args ) = @_;
+    return $self->before_send_messages($args);
+}
+
+sub before_send_messages {
+    my ( $self, $args ) = @_;
 
     my $dbh = C4::Context->dbh;
 

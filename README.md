@@ -50,7 +50,7 @@ Alias /plugin "/var/lib/koha/kohadev/plugins"
 ```
 
 * Set up the nightly cronjob
-* Tie the regular cronjob to the cronjob for process_message_queue.pl so it always run before it
+* Tie the regular cronjob to the cronjob for process_message_queue.pl so it always run before it (If you are using Koha 20.05 or later this is not required)
 
 
 # Staff Client Setup
