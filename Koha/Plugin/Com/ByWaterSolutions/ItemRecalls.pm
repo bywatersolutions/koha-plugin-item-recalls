@@ -39,6 +39,7 @@ BEGIN {
 ## Here we set our plugin version
 our $VERSION = "{VERSION}";
 
+
 our $metadata = {
     name            => 'Item Recalls',
     author          => 'Kyle M Hall',
@@ -255,7 +256,14 @@ sub can_recall {
               !$r->{branchcode} || $r->{branchcode} eq $patron->branchcode;
 
             if ( $it_match && $cc_match && $bc_match ) {
-                $rule = $r;
+                if ( my $checkout_age_minimum = $r->{checkout_age_minimum} ) {
+                    my $dt = dt_from_string( $hold->item->checkout->issuedate ); 
+                    my $dur = $dt->delta_days( dt_from_string() )->in_units('days');
+                    $rule = $r if $dur > $checkout_age_minimum;
+                } else {
+                    $rule = $r;
+                }
+
                 last;
             }
         }

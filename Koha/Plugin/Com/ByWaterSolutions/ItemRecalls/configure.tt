@@ -57,6 +57,7 @@ placeholder="-
                 <p><i>past_due_fine_amount_is_daily</i>: Optional, if set to 1, the past due fine amount will be charged daily instead of as a one time fee.</p>
                 <p><i>past_due_restrict</i>: Optional ability to restrict a patron who fails to return a recall by the new due date.</p>
                 <p><i>pickup_date_length</i>: Number of days the recaller has to pick up the now waiting item.</p>
+                <p><i>checkout_age_minimum</i>: The minimum number of days this item has been checked out for before a recall will be allowed.</p>
             </div>
         </fieldset>
 
