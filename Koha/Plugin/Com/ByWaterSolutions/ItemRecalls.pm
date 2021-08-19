@@ -46,8 +46,8 @@ our $metadata = {
     description     => 'Adds the ability to create recalls in Koha.',
     date_authored   => '2018-02-26',
     date_updated    => '1900-01-01',
-    minimum_version => '16.05',
-    maximum_version => '19.11',
+    minimum_version => '20.05',
+    maximum_version => undef,
     version         => $VERSION,
 };
 
@@ -176,17 +176,15 @@ sub api {
             my $recaller = Koha::Patrons->find({ userid => $username });
             die("Can't find patron with userid $username") unless $recaller;
 
-            my $hold_id  = AddReserve(
-                $branchcode,
-                $recaller->id,
-                $item->biblionumber,
-                undef,
-                1,
-                undef,
-                undef,
-                'Item recalled for course reserve',
-                undef,
-                $item->id,
+            my $hold_id = AddReserve(
+                {
+                    branchcode     => $branchcode,
+                    borrowernumber => $recaller->id,
+                    biblionumber   => $item->biblionumber,
+                    priority       => 1,
+                    notes          => 'Item recalled for course reserve',
+                    itemnumber     => $item->id,
+                }
             );
             my $hold = Koha::Holds->find( $hold_id );
 
