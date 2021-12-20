@@ -46,7 +46,7 @@ our $metadata = {
     description     => 'Adds the ability to create recalls in Koha.',
     date_authored   => '2018-02-26',
     date_updated    => '1900-01-01',
-    minimum_version => '20.05',
+    minimum_version => '21.05',
     maximum_version => undef,
     version         => $VERSION,
 };
@@ -301,13 +301,19 @@ sub recall_item {
     $new_date_due->set_minute('59');
     $new_date_due->set_second('00');
 
-    if ( C4::Context->preference('useDaysMode') ne 'Days' ) {
-        my $calendar = Koha::Calendar->new( branchcode => $checkout->branchcode );
-        if ( $calendar->is_holiday($new_date_due) ) {
-
-            # Don't return on a closed day
-            $new_date_due = $calendar->next_open_day($new_date_due);
+    my $daysmode = Koha::CirculationRules->get_effective_daysmode(
+        {
+            categorycode => $patron->categorycode,
+            itemtype     => $item->effective_itemtype,
+            branchcode   => $hold->branchcode,
         }
+    );
+
+    my $calendar = Koha::Calendar->new( branchcode => $checkout->branchcode, days_mode => $daysmode );
+    if ( $calendar->is_holiday($new_date_due) ) {
+
+        # Don't return on a closed day
+        $new_date_due = $calendar->next_open_days($new_date_due, 1);
     }
 
     # Don't update date due if it is already due soon then date_due_length
