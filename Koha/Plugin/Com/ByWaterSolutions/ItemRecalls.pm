@@ -39,7 +39,6 @@ BEGIN {
 ## Here we set our plugin version
 our $VERSION = "{VERSION}";
 
-
 our $metadata = {
     name            => 'Item Recalls',
     author          => 'Kyle M Hall',
@@ -629,12 +628,17 @@ sub intranet_js {
         enable_auto_recall => $self->retrieve_data('enable_auto_recall'),
     };
 
-    my $template = $self->get_template( { file => "intranetuserjs.tt" } );
-    $template->param(%$data);
+    my $template_name = $self->mbf_path( "intranetuserjs.tt" );
 
-    my $template_output = $template->output();
+    my $tt = Template->new({
+        ABSOLUTE     => 1,
+    }) || die $Template::ERROR, "\n";
 
-    return $template_output;
+    my $output = '';
+    $tt->process($template_name, $data, \$output)
+        || die $tt->error(), "\n";
+
+    return $output;
 }
 
 sub opac_js {
@@ -644,12 +648,17 @@ sub opac_js {
         enable_auto_recall => $self->retrieve_data('enable_auto_recall'),
     };
 
-    my $template = $self->get_template( { file => "opacuserjs.tt" } );
-    $template->param(%$data);
+    my $template_name = $self->mbf_path( "opacuserjs.tt" );
 
-    my $template_output = $template->output();
+    my $tt = Template->new({
+        ABSOLUTE     => 1,
+    }) || die $Template::ERROR, "\n";
 
-    return $template_output;
+    my $output = '';
+    $tt->process($template_name, $data, \$output)
+        || die $tt->error(), "\n";
+
+    return $output;
 }
 
 ## This method will be run just before the plugin files are deleted
