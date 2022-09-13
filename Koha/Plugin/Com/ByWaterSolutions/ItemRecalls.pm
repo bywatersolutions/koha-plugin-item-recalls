@@ -255,7 +255,7 @@ sub can_recall {
 
             if ( $it_match && $cc_match && $bc_match ) {
                 if ( my $checkout_age_minimum = $r->{checkout_age_minimum} ) {
-                    my $dt = dt_from_string( $hold->item->checkout->issuedate ); 
+                    my $dt = dt_from_string( $hold->item->checkout->issuedate );
                     my $dur = $dt->delta_days( dt_from_string() )->in_units('days');
                     $rule = $r if $dur > $checkout_age_minimum;
                 } else {
@@ -607,29 +607,49 @@ sub install() {
     return 1;
 }
 
-sub update_syspref {
-    my ( $self, $syspref_name, $data ) = @_;
+sub upgrade {
+    my ( $self ) = @_;
 
     my $name = $self->get_metadata->{name};
 
-    my $syspref = C4::Context->preference($syspref_name);
+    # Remove old js from sysprefs, using plugin hooks now
+    my $syspref = C4::Context->preference('intranetuserjs');
     $syspref =~ s|\n*/\* JS and CSS for $name Plugin.*End of JS and CSS for $name Plugin \*/||gs;
+    C4::Context->set_preference( 'intranetuserjs', $syspref );
 
-    if ( $syspref_name eq 'intranetuserjs' ||  !$self->retrieve_data('disable_opac_recall') ) {
-        my $template = $self->get_template( { file => "$syspref_name.tt" } );
-        $template->param(%$data);
+    $syspref = C4::Context->preference('opacuserjs');
+    $syspref =~ s|\n*/\* JS and CSS for $name Plugin.*End of JS and CSS for $name Plugin \*/||gs;
+    C4::Context->set_preference( 'opacuserjs', $syspref );
+}
 
-        my $template_output = $template->output();
+sub intranet_js {
+    my ( $self ) = @_;
 
-        $template_output = qq|\n/* JS and CSS for $name Plugin
-       This JS was added automatically by installing the $name Plugin
-       Please do not modify */|
-          . $template_output . qq|/* End of JS and CSS for $name Plugin */|;
+    my $data = {
+        enable_auto_recall => $self->retrieve_data('enable_auto_recall'),
+    };
 
-        $syspref .= $template_output;
-    }
+    my $template = $self->get_template( { file => "intranetuserjs.tt" } );
+    $template->param(%$data);
 
-    C4::Context->set_preference( $syspref_name, $syspref );
+    my $template_output = $template->output();
+
+    return $template_output;
+}
+
+sub opac_js {
+    my ( $self ) = @_;
+
+    my $data = {
+        enable_auto_recall => $self->retrieve_data('enable_auto_recall'),
+    };
+
+    my $template = $self->get_template( { file => "opacuserjs.tt" } );
+    $template->param(%$data);
+
+    my $template_output = $template->output();
+
+    return $template_output;
 }
 
 ## This method will be run just before the plugin files are deleted
