@@ -109,9 +109,6 @@ sub configure {
         );
         $self->store_data($data);
 
-        $self->update_syspref( 'opacuserjs',     $data );
-        $self->update_syspref( 'intranetuserjs', $data );
-
         $self->go_home();
     }
 }
