@@ -44,6 +44,8 @@ jobs:
 
     - uses: actions/checkout@v1
 
+    - uses: gautamkrishnar/keepalive-workflow@v1 # Keeps GitHub from pausing cron'ed actions
+
     - name: Get Koha Version Branch Name
       id: koha-version
       uses: "bywatersolutions/github-action-koha-get-version-by-label@master"
@@ -101,7 +103,7 @@ jobs:
         ls -alh
         echo "`date`: Installing YAML::Syck, needed for Koha 20.11 and earlier"
         docker exec koha_koha_1 apt-get install -y libyaml-syck-perl libemail-valid-perl libmojo-jwt-perl
-        while [ $? -ne 0 ]; do echo "INSTALL YAML::Syck" && docker exec koha_koha_1 apt-get install -y libyaml-syck-perl; done
+        while [ $? -ne 0 ]; do echo "INSTALL YAML::Syck" && docker exec koha_koha_1 apt-get install -y libyaml-syck-perl libemail-valid-perl; done
         echo "SLEEPING 3 MINUTES"
         sleep 60
         echo "1 MINUTE DONE"
@@ -171,6 +173,7 @@ jobs:
         release-version: ${{ steps.myvars.outputs.tag_version }}
         release-name: ${{ steps.myvars.outputs.github_repo }}
         minimum-version: ${{ steps.koha-version-oldstable.outputs.version-major-minor }}
+        plugin-moudle: "Koha/Plugin/Com/ByWaterSolutions/ItemRecalls.pm"
 
     - name: See if kpz was created
       run: |
