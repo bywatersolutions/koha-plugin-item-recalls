@@ -2,7 +2,7 @@
 [%- UNLESS enable_auto_recall -%]
 $(document).ready(function() {
   if (window.location.href.indexOf("request.pl") > -1) {
-    let reserve_elt = $('table tr:nth-child(2) td:nth-child(1) input[name="reserve_id"]')
+    let reserve_elt = $('.holds_table input[name="reserve_id"]:first')
     let reserve_id = reserve_elt.val();
 
     let cancel_button = reserve_elt.parent().parent().find("a.cancel-hold");
