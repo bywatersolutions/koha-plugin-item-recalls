@@ -19,7 +19,7 @@ use Koha::Checkouts;
 use Koha::DateUtils qw( dt_from_string );
 use Koha::Holds;
 use Koha::Notice::Messages;
-use Koha::Patron::Debarments;
+use Koha::Patron::Debarments qw( GetDebarments AddDebarment DelDebarment );
 
 # This block allows us to load external modules stored within the plugin itself
 # In this case it's Template::Plugin::Filter::Minify::JavaScript/CSS and deps
