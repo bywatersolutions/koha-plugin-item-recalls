@@ -19,7 +19,7 @@ use Koha::Checkouts;
 use Koha::DateUtils qw( dt_from_string );
 use Koha::Holds;
 use Koha::Notice::Messages;
-use Koha::Patron::Debarments qw( GetDebarments AddDebarment DelDebarment );
+use Koha::Patron::Debarments qw( AddDebarment DelDebarment );
 
 # This block allows us to load external modules stored within the plugin itself
 # In this case it's Template::Plugin::Filter::Minify::JavaScript/CSS and deps
@@ -385,12 +385,27 @@ sub cronjob_nightly {
                   . "return recalled item in time: "
                   . "$title ( $barcode ) Due $date_due_formatted, Itemnumber:$itemnumber";
 
-                my $restrictions = Koha::Patron::Debarments::GetDebarments(
-                    {
-                        borrowernumber => $checkout->patron->id,
-                        comment        => $comment
-                    }
-                );
+                my $patron = $checkout->patron;
+
+                my $restrictions = 0;
+                try { # Koha 23.05.00, 22.11.03 or older
+                    my $r = Koha::Patron::Debarments::GetDebarments(
+                        {
+                            borrowernumber => $patron->id,
+                            comment        => $comment
+                        }
+                    );
+                    $restrictions = scalar @$r;
+                } catch {
+                    my $r = $patron->restrictions->search(
+                        {
+                            borrowernumber => $patron->id,
+                            comment        => $comment
+                        }
+                    );
+                    $restrictions = $r->count;
+                }
+
                 unless (@$restrictions) {
                     Koha::Patron::Debarments::AddDebarment(
                         {
