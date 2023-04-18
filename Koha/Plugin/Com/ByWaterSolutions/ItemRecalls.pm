@@ -404,7 +404,7 @@ sub cronjob_nightly {
                         }
                     );
                     $restrictions = $r->count;
-                }
+                };
 
                 unless (@$restrictions) {
                     Koha::Patron::Debarments::AddDebarment(
