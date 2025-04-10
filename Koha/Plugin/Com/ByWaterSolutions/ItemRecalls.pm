@@ -484,8 +484,11 @@ sub cronjob_nightly {
 
 }
 
-sub cronjob {
-    my ( $self, $args ) = @_;
+sub before_send_messages {
+    my ( $self, $params ) = @_;
+
+    my $message_id = $params->{message_id};
+    return if $message_id;
 
     my $dbh = C4::Context->dbh;
 
@@ -510,7 +513,7 @@ sub cronjob {
         foreach my $u (@$unrecalled) {
             my $hold = Koha::Holds->find( $u->{reserve_id} );
             my $rule = $self->can_recall( $hold, $rules );
-            $self->recall_item({ hold => $hold, rule => $rule }) if $rule;
+            $self->recall_item( { hold => $hold, rule => $rule } ) if $rule;
         }
     }
 
