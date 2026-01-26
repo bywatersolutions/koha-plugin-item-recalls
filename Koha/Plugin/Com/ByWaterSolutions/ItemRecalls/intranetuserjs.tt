@@ -1,11 +1,11 @@
 <script>
 [%- UNLESS enable_auto_recall -%]
 $(document).ready(function() {
-  if (window.location.href.indexOf("request.pl") > -1) {
-    let reserve_elt = $('.holds_table input[name="reserve_id"]:first')
+  if (window.location.pathname.includes("request.pl")) {
+    let reserve_elt = $('.holds_table input[name="reserve_id"]:first');
     let reserve_id = reserve_elt.val();
 
-    let cancel_button = reserve_elt.parent().parent().find("a.cancel-hold");
+    let cancel_button = $('a.cancel-hold[data-id="' + reserve_id + '"]'); // Select cancel button using data-id
     cancel_button.parent().css("white-space", "nowrap");
 
     $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/api.pl", {
@@ -13,7 +13,7 @@ $(document).ready(function() {
       action: 'can_item_be_recalled'
     }, function(data) {
       if (data.can_recall) {
-        $("<a href='#' title='Recall item' data-reserve_id=" + reserve_id + " class='recall-item btn btn-default btn-xs btn-link'><i class='fa fa-repeat'></i></a>").insertAfter(cancel_button);
+        $("<a href='#' title='Recall item' data-reserve_id='" + reserve_id + "' class='recall-item btn btn-default btn-xs'><i class='fa fa-sync'></i></a>").insertAfter(cancel_button);
       }
     });
 
@@ -44,16 +44,20 @@ $(document).ready(function() {
 [%- END -%]
 
 $(document).ready(function() {
-  if (window.location.href.indexOf("course-details.pl") > -1) {
+  if (window.location.pathname.includes("course-details.pl")) {
     let href = $("#add_items").attr("href");
     let parts = href.split('=');
     let course_id = parts[1];
-    $("<a href='#' id='recall-course-items' title='Recall items' data-course_id=" + course_id + " class='btn btn-default btn-sm' style='margin-left: 3px'><i class='fa fa-repeat'></i> Recall items</a>").insertAfter("#delete_course");
-    $("<input type='date' id='course-datepicker' required pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}' style='vertical-align:middle'>").insertAfter("#recall-course-items");
-    $("#recall-course-items").on('click', function() {
-      let date = document.querySelector('#course-datepicker').value;
-      let branchcode = document.querySelector('.logged-in-branch-code').innerHTML;
-      let username = document.querySelector('.loggedinusername').innerHTML;
+
+    $("<a href='#' id='recall-course-items' title='Recall items' data-course_id='" + course_id + "' class='btn btn-default btn-sm' style='margin-left: 3px;'><i class='fa fa-sync'></i> Recall items</a>").insertAfter("#delete_course");
+    $("<input type='date' id='course-datepicker' class='form-control' required pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}' style='display: inline-block; width: auto; margin-left: 5px; vertical-align: middle;'>").insertAfter("#recall-course-items");
+
+    $("#recall-course-items").on('click', function(e) {
+      e.preventDefault();
+
+      let date = $('#course-datepicker').val();
+      let branchcode = $('.logged-in-branch-code').text().trim();
+      let username = $('.loggedinusername').text().trim();
 
       if (!date) {
         alert("Please select a date that items must be returned by using the datepicker to the right of the 'Recall items' button");
@@ -68,7 +72,7 @@ $(document).ready(function() {
           if (data.success) {
             alert("Items recalled!");
           } else {
-            alert("Unable to recall item!");
+            alert("Unable to recall items!");
           }
         });
       }

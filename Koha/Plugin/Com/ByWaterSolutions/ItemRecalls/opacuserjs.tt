@@ -1,21 +1,21 @@
 <script>
 [%- UNLESS enable_auto_recall -%]
 $(document).ready(function() {
-  if (window.location.href.indexOf("opac-user.pl") > -1) {
+  if (window.location.pathname.includes("opac-user.pl")) {
 
-    $("td.modify input[name='reserve_id'][type='hidden']").each(function(index) {
-      let reserve_id = $(this).val();
-      let cancel_button = $(this).siblings("button");
+    // Iterate over cancel buttons directly using data-reserve_id attribute
+    $("td.modify button.btn-delete-hold[data-reserve_id]").each(function() {
+      let cancel_button = $(this);
+      let reserve_id = cancel_button.data('reserve_id');
 
       $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/api.pl", {
         reserve_id: reserve_id,
         action: 'can_item_be_recalled'
       }, function(data) {
         if (data.can_recall) {
-          $("<p/><button data-reserve_id=" + reserve_id + " class='recall-item btn btn-mini btn-warning'><i class='icon-repeat icon-white'></i> Recall item</button>").insertAfter(cancel_button);
+          $("<button type='button' data-reserve_id='" + reserve_id + "' class='recall-item btn btn-sm btn-warning' style='margin-top: 5px;'><i class='fa fa-sync'></i> Recall item</button>").insertAfter(cancel_button);
         }
       });
-
     });
 
     $(document.body).on('click', '.recall-item', function(e) {
