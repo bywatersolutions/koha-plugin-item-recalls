@@ -5,7 +5,7 @@ $(document).ready(function() {
     let reserve_elt = $('.holds_table input[name="reserve_id"]:first')
     let reserve_id = reserve_elt.val();
 
-    let cancel_button = reserve_elt.parent().parent().find("a.cancel-hold");
+    let cancel_button = $('a.cancel-hold[data-id="' + reserve_id + '"]'); // Select cancel button using data-id
     cancel_button.parent().css("white-space", "nowrap");
 
     $.get("/plugin/Koha/Plugin/Com/ByWaterSolutions/ItemRecalls/api.pl", {
