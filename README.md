@@ -1,136 +1,143 @@
-# Koha Item Recalls plugin
+# Koha Item Recalls Plugin
 
-This Koha plugin that adds the ability to place recalls on items.
+This Koha plugin adds item recall functionality, allowing patrons to recall items that are currently checked out by other patrons. When a recall is placed, the current borrower's due date is shortened and they receive a notification.
 
-# Introduction
+## Requirements
 
-Koha’s Plugin System (available in Koha 3.12+) allows for you to add additional tools and reports to [Koha](http://koha-community.org) that are specific to your library. Plugins are installed by uploading KPZ ( Koha Plugin Zip ) packages. A KPZ file is just a zip file containing the perl files, template files, and any other files necessary to make the plugin work. Learn more about the Koha Plugin System in the [Koha Manual](https://koha-community.org/manual/latest/en/html/plugins.html?highlight=plugins) or watch this tutorial video on Monday Minutes :(https://bywatersolutions.com/education/monday-minutes-plugins-in-koha)
+- Koha 21.05 or later
+- Plugin system enabled
 
-# Downloading
+## Downloading
 
-From the [release page](https://github.com/bywatersolutions/koha-plugin-item-recalls/releases) you can download the relevant *.kpz file
+From the [release page](https://github.com/bywatersolutions/koha-plugin-item-recalls/releases) you can download the relevant `*.kpz` file.
 
-# Installing
+## Installing
 
-Koha's Plugin System allows for you to add additional tools and reports to Koha that are specific to your library. Plugins are installed by uploading KPZ ( Koha Plugin Zip ) packages. A KPZ file is just a zip file containing the perl files, template files, and any other files necessary to make the plugin work.
+1. Enable plugins in your Koha installation:
+   - Change `<enable_plugins>0</enable_plugins>` to `<enable_plugins>1</enable_plugins>` in your `koha-conf.xml` file
+   - Confirm that the path to `<pluginsdir>` exists and is writable by the web server
+   - Restart your webserver
+   - Restart memcached if you are using it
 
-The plugin system needs to be turned on by a system administrator.
+2. Enable the `UseKohaPlugins` system preference
 
-To set up the Koha plugin system you must first make some changes to your install.
+3. Upload the `.kpz` file via the Koha plugin manager (Tools → Plugins)
 
-* Change `<enable_plugins>0<enable_plugins>` to `<enable_plugins>1</enable_plugins>` in your koha-conf.xml file
-* Confirm that the path to `<pluginsdir>` exists, is correct, and is writable by the web server
-* Restart your webserver
-* Restart memcached if you are using it
+## Setup
 
-Once set up is complete you will need to alter your UseKohaPlugins system preference. On the Tools page you will see the Tools Plugins and on the Reports page you will see the Reports Plugins.
+After installing the plugin:
 
-# Setup
+1. **Configure HOLD notices**: Ensure each HOLD notice template ends with the following code (the plugin will attempt to add this automatically on install):
 
-* Install the plugin
-* Ensure each HOLD notice ends with the following code:
+   ```
+   --
+   ID: <<reserves.reserve_id>>.
+   --
+   ```
 
+   This is required for the plugin to identify and replace hold pickup notices with recall pickup notices.
+
+2. **Set up cronjobs**:
+   - Run the nightly cronjob daily to process overdue recalls and apply penalties:
+     ```bash
+     /path/to/koha/misc/cronjobs/plugins-nightly.pl
+     ```
+   - Ensure `process_message_queue.pl` runs after the plugin's `before_send_messages` hook processes notices
+
+3. **Configure recall rules** in the plugin configuration (see below)
+
+## What the Plugin Does on Install
+
+- Creates a `plugin_recalls` table to track recalls
+- Creates two notice templates:
+  - `RECALL_PLUGIN` - Sent to the borrower when their item is recalled
+  - `RECALL_PICKUP_PLUGIN` - Sent to the recaller when the item is ready for pickup
+- Updates existing HOLD notices to include the reserve ID
+
+## Configuration
+
+### Recall Rules
+
+Rules are configured via YAML in the plugin configuration page. Rules are evaluated top to bottom, and the **first matching rule wins**. Order your rules from most specific to least specific.
+
+#### YAML Configuration Example
+
+```yaml
+# Specific rule for DVDs at the Main branch for Faculty
+- branchcode: MAIN
+  categorycode: FACULTY
+  itemtype: DVD
+  due_date_length: 3
+  pickup_date_length: 7
+  past_due_fine_amount: 5.00
+  past_due_restrict: 1
+  checkout_age_minimum: 7
+
+# Rule for all items at the Main branch
+- branchcode: MAIN
+  due_date_length: 7
+  pickup_date_length: 10
+  past_due_fine_amount: 2.00
+  past_due_restrict: 0
+
+# Default catch-all rule (no criteria = matches everything)
+- due_date_length: 14
+  pickup_date_length: 14
+  past_due_restrict: 0
 ```
---
-ID: <<reserves.reserve_id>>.
---
-```
 
-* Add the following to each staff and opac section of your Apache config:
+#### Rule Fields
 
-```apache
-Alias /plugin "/var/lib/koha/kohadev/plugins"
-# The stanza below is needed for Apache 2.4+
-<Directory /var/lib/koha/kohadev/plugins>
-      Options Indexes FollowSymLinks ExecCGI
-      AddHandler cgi-script .pl
-      AllowOverride None
-      Require all granted
-</Directory>
-```
+| Field | Description | Required |
+|-------|-------------|----------|
+| `branchcode` | Library branch code (pickup location). Leave empty to match all branches. | No |
+| `categorycode` | Patron category code. Leave empty to match all categories. | No |
+| `itemtype` | Item type code. Leave empty to match all item types. | No |
+| `due_date_length` | Number of days from today for the new due date. | Yes |
+| `pickup_date_length` | Number of days the recaller has to pick up the item once it's available. | Yes |
+| `past_due_fine_amount` | Fine amount charged if the borrower fails to return the recalled item by the new due date. | No |
+| `past_due_fine_amount_is_daily` | If set to `1`, the fine is charged daily instead of once. | No |
+| `past_due_restrict` | If set to `1`, the borrower will be restricted if they fail to return the item by the new due date. | No |
+| `checkout_age_minimum` | Minimum number of days the item must have been checked out before a recall can be placed. | No |
 
-* Set up the nightly cronjob
-* Tie the regular cronjob to the cronjob for process_message_queue.pl so it always run before it
+### Auto-Recall
 
+The plugin configuration includes an option to enable auto-recall. When enabled, the plugin will automatically recall eligible items during the `before_send_messages` hook.
 
-# Staff Client Setup
+## How Recalls Work
 
-When you install the plug in, it does three things:
-Creates a table called Plug_In_recalls - has added Reserve ID and the item number
-Creates two new notices: RECALL_Plugin and RECALL_pickup
-Goes through the Holds notices and adds the Reserve ID.
+### Requirements for a Recall
 
+For an item to be recalled:
+- The item must be currently checked out
+- A hold must exist on the item
+- The hold must be an **item-level hold** (not title-level)
+- The recalling patron must be **first in the hold queue** (priority 1)
+- A matching recall rule must exist
 
-# For Recalls to Happen: 
+### Recall Process
 
-*Item must be checked out
+1. A patron places an item-level hold on a checked-out item
+2. A recall button appears next to the hold (in both staff client and OPAC)
+3. When clicked, the recall:
+   - Shortens the current borrower's due date according to the rule
+   - Sends a `RECALL_PLUGIN` notice to the current borrower
+   - Records the recall in the `plugin_recalls` table
+4. When the item is returned:
+   - The plugin replaces the standard hold pickup notice with `RECALL_PICKUP_PLUGIN`
+   - Sets the hold expiration date based on `pickup_date_length`
+5. The nightly cronjob processes overdue recalls:
+   - Applies fines if configured
+   - Adds restrictions if configured
+   - Removes restrictions once items are returned
 
-*Item must be on hold
+## Notice Templates
 
-*For a patron to place a recall on the hold- they need to be the first person on hold and the hold must be an item level hold.
+You can customize the notice templates in Tools → Notices & Slips:
 
-*Must have a rule allowing item recall
+- **RECALL_PLUGIN**: Notifies the current borrower that their item has been recalled
+- **RECALL_PICKUP_PLUGIN**: Notifies the recaller that their recalled item is ready for pickup
 
-To configure rules for the ability to recall the holds- Manage Plugins, Configure “Recall Holds Plugin”
+## Video Tutorial
 
-
-These rules are written in YAML which when you create a rule, verify at YAMLit.com that code is correct
-
-BC= branch code - currently is the pick up location
-CC= category code - patron type from authorized values
-
-
-Rules are checked top to bottom - matches on the first matching rule it finds, so have the rules most specific to least specific.
-
-* Due_date_length = how many days from today the current patron  has to return the item.  Example: 3 means you have 3 days to return the item.
-
-* Past_due_fine_amount = Optional charge for patrons who fail to return a recall by the new due date.  This is an addition to any other fines that accrue.
-
-* Past_due_restrict = Optional ability to restrict a patron who fails to return a recall by the new due date.
-Example 0=no restriction 1 = restrict
-
-* Pickup_date_length = Number of days the recaller has to pick up the now awaiting item. 
-
-If you take out the branch code, category code and item code, the rules will apply to all locations, all patron types, and all item types.
-
-Since these rules allow for specific branch codes, patron types and Items to be recalled- each combination of these would have their own set up rules configured in the plugin.
-
-
-This recall can be done on both the staff side and the OPAC
-
-
-# Steps to recreate this from Staff Side.  
-1. Find an item that is currently checked out.
-2. Go to place a hold on this item.  This must be an item level hold- so pick the specific copy that is checked out.
-3.Once the hold is created, this screen (see above) will appear.
-4.Within a sec, the recall item symbol resembles the refresh icon in browsers will appear.  
-5.Click this recall symbol - the staff will see a pop up message that says that the item has been recalled.
-6.A notice will go to the patron that currently has the booked checked out.  
-7.  The language can be adjusted for this recall notice in the Notices and Slips .
-8.  The due date changes on the patrons account that has the book.
-9.  Once the item has been returned to the library- the patron that was first on the list and that chose for the recall will be notified that their hold is available.  
-10.  The cron will change the notice from the standard “Hold Available for Pickup” to the Recall Hold notice - due to the fact that they will have a limited number of days to pick up the item they recalled.
-
-
-
-# Steps for recalling holds on the OPAC
-
-1.Patron would log into their account on the OPAC.
-2.Find a book that is currently checked out.
-3.Place a hold on this book.  This does need to be a specific item hold, the patron would need to choose “show more options” which would allow them to choose a specific item
-4.Koha will display the patrons holds on the patron summary screen and there will be an orange button that displays to “recall the hold”
-5.  Clicking to recall the item does create a popup saying that the item has been recalled.
-6. The due date for the patron that has it currently checked out will be adjusted per the rules set up in the plugin configuration.
-7. Steps are the same for Staff and OPAC from here.
-
-
-
-# Things to Note
-
-
-Cron job needs to be set to run for this before the holds notices are run, as this cron job will change a hold pickup notice to Item Recall Pickup notice
-
-ID378 -  this little line of info at the bottom of the notice is very important (the number will change).  This is the Hold ID, or Reserve ID.
-
-# Link to YouTube video
-https://youtu.be/Vb6eoKKnPnc
+See the plugin in action: https://youtu.be/Vb6eoKKnPnc
