@@ -1,41 +1,63 @@
+[% USE raw %]
+[% USE Asset %]
+[% PROCESS 'i18n.inc' %]
+[% SET footerjs = 1 %]
 [% INCLUDE 'doc-head-open.inc' %]
-  <title>Koha: Item Recalls: Configuration</title>
-  [% INCLUDE 'doc-head-close.inc' %]
-
-  <link rel="stylesheet" type="text/css" href="[% interface %]/[% theme %]/css/humanmsg.css" />
-  <script src="[% interface %]/lib/jquery/plugins/humanmsg.js" type="text/javascript"></script>
-
-  <script type="text/javascript">
-    $(document).ready(function() {
-      $('#save_continue').on('click', function(e){
-        e.preventDefault();
-        $.post('', $('#configureForm').serialize(), function(){
-          humanMsg.displayMsg('Settings saved!');
-        });
-      });
-    });
-  </script>
-
+<title>[% FILTER collapse %]
+    [% t("Configuration") | html %] &rsaquo;
+    [% t("Item Recalls") | html %] &rsaquo;
+    [% t("Koha") | html %]
+[% END %]</title>
+[% INCLUDE 'doc-head-close.inc' %]
 </head>
-<body>
-[% INCLUDE 'header.inc' %]
-[% INCLUDE 'cat-search.inc' %]
+<body id="plugins_ItemRecalls_configure" class="plugins">
+[% WRAPPER 'header.inc' %]
+    [% INCLUDE 'cat-search.inc' %]
+[% END %]
 
-<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Item Recalls &rsaquo; Configuration</div>
+[% WRAPPER 'sub-header.inc' %]
+    [% WRAPPER breadcrumbs %]
+        [% WRAPPER breadcrumb_item %]
+            <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a>
+        [% END %]
+        [% WRAPPER breadcrumb_item %]
+            <a href="/cgi-bin/koha/plugins/run.pl?class=[% CLASS %]&method=tool">Item Recalls</a>
+        [% END %]
+        [% WRAPPER breadcrumb_item bc_active = 1 %]
+            <span>Configuration</span>
+        [% END %]
+    [% END #/ WRAPPER breadcrumbs %]
+[% END #/ WRAPPER sub-header.inc %]
 
-<div id="doc3">
-    <h3>Koha: Item Recalls: Configuration</h3>
+<div class="main container-fluid">
+    <div class="row">
+        <div class="col-md-10 order-md-2 order-sm-1">
+            <main>
+                <h1>Item Recalls Configuration</h1>
 
-    This plugin has no configuration options at this time.
-    <form id="configureForm" method="get">
-        <!-- Always pass these two parameters so the plugin system knows what to execute! -->
-        <input type="hidden" name="class" value="[% CLASS %]"/>
-        <input type="hidden" name="method" value="[% METHOD %]"/>
+                [% IF success_message %]
+                    <div class="alert alert-success">
+                        [% success_message | html %]
+                    </div>
+                [% END %]
 
-        <fieldset>
-            <legend>Recall rules</legend>
+                [% IF error_message %]
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> [% error_message | html %]
+                    </div>
+                [% END %]
 
-            <textarea name="recall_rules" id="recall_rules" rows="20" cols="40"
+                <form method="post" id="configure_form">
+                    <input type="hidden" name="class" value="[% CLASS %]"/>
+                    <input type="hidden" name="method" value="configure"/>
+                    <input type="hidden" name="save" value="1"/>
+
+                    <fieldset class="rows">
+                        <legend>Recall Rules</legend>
+                        <ol>
+                            <li>
+                                <label for="recall_rules">Rules (YAML format): </label>
+                                <textarea name="recall_rules" id="recall_rules" rows="20" cols="60"
 placeholder="-
   branchcode: BC
   categorycode: CC
@@ -49,36 +71,73 @@ placeholder="-
   due_date_length: 3
   past_due_fine_amount: 2.0
   past_due_restrict: 0
-  pickup_date_length: 3">[% recall_rules %]</textarea>
-            <div class="hint">
-                <p>The keys <i>branchcode</i>, <i>categorycode</i>, and <i>itemtype</i> are option. Leave one out means the rule applies to all items for that key.</p>
-                <p><i>due_date_length</i>: Number days a patron has to return an item once it has been recalled.</p>
-                <p><i>past_due_fine_amount</i>: Optional charge for patrons who fail to return a recall by the new due date.</p>
-                <p><i>past_due_fine_amount_is_daily</i>: Optional, if set to 1, the past due fine amount will be charged daily instead of as a one time fee.</p>
-                <p><i>past_due_restrict</i>: Optional ability to restrict a patron who fails to return a recall by the new due date.</p>
-                <p><i>pickup_date_length</i>: Number of days the recaller has to pick up the now waiting item.</p>
-                <p><i>checkout_age_minimum</i>: The minimum number of days this item has been checked out for before a recall will be allowed.</p>
-            </div>
-        </fieldset>
+  pickup_date_length: 3">[% recall_rules | html %]</textarea>
+                            </li>
+                        </ol>
 
-        <fieldset>
-            <legend>Other options</legend>
+                        <div class="alert alert-info">
+                            <h4>Recall Rules Reference</h4>
+                            <p>Rules are matched top-to-bottom; the first matching rule wins. Each rule can include:</p>
+                            <dl class="row">
+                                <dt class="col-sm-3"><code>branchcode</code>, <code>categorycode</code>, <code>itemtype</code></dt>
+                                <dd class="col-sm-9">Optional matching criteria. Omit any key to match all values for that attribute.</dd>
 
-            <input type="checkbox" name="enable_auto_recall" id="enable_auto_recall" [% IF enable_auto_recall %]checked="checked"[% END %]/>
-            <label for="enable_auto_recall">Auto-recall</label>
-            <span class="hint">Automatically recall any item placed on hold. No manual recall button will display.</span>
-            <p>
-            <input type="checkbox" name="disable_opac_recall" id="disable_opac_recall" [% IF disable_opac_recall %]checked="checked"[% END %]/>
-            <label for="disable_opac_recall">Disable manual recalls via OPAC.</label>
-            <span class="hint">Does nothing if you are using auto-recall, otherwise prevents patrons from placing recalls via the OPAC.</span>
-        </fieldset>
+                                <dt class="col-sm-3"><code>due_date_length</code></dt>
+                                <dd class="col-sm-9">Number of days a patron has to return an item once it has been recalled.</dd>
 
-        <p/>
+                                <dt class="col-sm-3"><code>past_due_fine_amount</code></dt>
+                                <dd class="col-sm-9">Optional charge for patrons who fail to return a recall by the new due date.</dd>
 
-        <input type="hidden" name="save" value="1" />
+                                <dt class="col-sm-3"><code>past_due_fine_amount_is_daily</code></dt>
+                                <dd class="col-sm-9">Set to <code>1</code> to charge the fine daily instead of as a one-time fee.</dd>
 
-        <input type="submit" value="Save" />
-        <button id="save_continue">Save & continue</button>
-    </form>
+                                <dt class="col-sm-3"><code>past_due_restrict</code></dt>
+                                <dd class="col-sm-9">Set to <code>1</code> to restrict a patron who fails to return a recall by the new due date.</dd>
+
+                                <dt class="col-sm-3"><code>pickup_date_length</code></dt>
+                                <dd class="col-sm-9">Number of days the recaller has to pick up the waiting item.</dd>
+
+                                <dt class="col-sm-3"><code>checkout_age_minimum</code></dt>
+                                <dd class="col-sm-9">Minimum number of days an item must be checked out before a recall is allowed.</dd>
+                            </dl>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="rows">
+                        <legend>Other Options</legend>
+                        <ol>
+                            <li>
+                                <label for="enable_auto_recall">Auto-recall: </label>
+                                <input type="checkbox" name="enable_auto_recall" id="enable_auto_recall" value="1" [% IF enable_auto_recall %]checked="checked"[% END %]/>
+                                <div class="hint">
+                                    Automatically recall any item placed on hold. No manual recall button will display.
+                                </div>
+                            </li>
+                            <li>
+                                <label for="disable_opac_recall">Disable OPAC recalls: </label>
+                                <input type="checkbox" name="disable_opac_recall" id="disable_opac_recall" value="1" [% IF disable_opac_recall %]checked="checked"[% END %]/>
+                                <div class="hint">
+                                    Prevents patrons from placing recalls via the OPAC. Has no effect if auto-recall is enabled.
+                                </div>
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <fieldset class="action">
+                        <input type="submit" class="btn btn-primary" value="Save Configuration" />
+                        <a class="cancel" href="/cgi-bin/koha/plugins/plugins-home.pl">Cancel</a>
+                    </fieldset>
+                </form>
+            </main>
+        </div>
+        <div class="col-md-2 order-sm-2 order-md-1">
+            <aside> [% INCLUDE 'admin-menu.inc' %] </aside>
+        </div>
+    </div>
+</div>
+
+[% MACRO jsinclude BLOCK %]
+    [% Asset.js("js/admin-menu.js") | $raw %]
+[% END %]
 
 [% INCLUDE 'intranet-bottom.inc' %]
